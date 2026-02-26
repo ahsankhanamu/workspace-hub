@@ -11,3 +11,4 @@ esbuild.mjs
 .DS_Store
 resources/icons/icon.svg
 resources/icons/icon-v1.svg
+resources/demo.mp4

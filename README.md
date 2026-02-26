@@ -2,6 +2,8 @@
 
 Discover, organize, and switch workspaces effortlessly — with favorites, groups, pinned workspaces, search folders, and quick switch.
 
+![Demo](resources/demo.gif)
+
 ## Features
 
 - **All Workspaces** — Automatically discovers `.code-workspace` files and git repositories from configured search folders
