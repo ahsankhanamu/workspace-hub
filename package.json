@@ -1,0 +1,642 @@
+{
+  "name": "workspace-hub",
+  "displayName": "Workspace Hub",
+  "description": "Best-in-class VS Code workspace manager — discover, organize, and switch workspaces with favorites, groups, and more.",
+  "version": "0.1.0",
+  "publisher": "ahsankhanamu",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "workspace",
+    "manager",
+    "project",
+    "switcher",
+    "favorites"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "workspaceHub",
+          "title": "Workspace Hub",
+          "icon": "resources/icons/workspace-hub.svg"
+        }
+      ]
+    },
+    "views": {
+      "workspaceHub": [
+        {
+          "id": "workspaceHub.pinned",
+          "name": "Pinned",
+          "when": "workspaceHub.hasPinned",
+          "visibility": "visible"
+        },
+        {
+          "id": "workspaceHub.recent",
+          "name": "Recent",
+          "visibility": "visible"
+        },
+        {
+          "id": "workspaceHub.favorites",
+          "name": "Favorites",
+          "visibility": "visible"
+        },
+        {
+          "id": "workspaceHub.groups",
+          "name": "Groups",
+          "visibility": "visible"
+        },
+        {
+          "id": "workspaceHub.searchFolders",
+          "name": "Search Folders",
+          "visibility": "visible"
+        },
+        {
+          "id": "workspaceHub.all",
+          "name": "All Workspaces",
+          "visibility": "visible"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "workspaceHub.open",
+        "title": "Open Workspace",
+        "category": "Workspace Hub",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "workspaceHub.openNewWindow",
+        "title": "Open in New Window",
+        "category": "Workspace Hub",
+        "icon": "$(multiple-windows)"
+      },
+      {
+        "command": "workspaceHub.create",
+        "title": "Create Workspace...",
+        "category": "Workspace Hub",
+        "icon": "$(add)"
+      },
+      {
+        "command": "workspaceHub.delete",
+        "title": "Delete Workspace",
+        "category": "Workspace Hub",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "workspaceHub.rename",
+        "title": "Rename Workspace...",
+        "category": "Workspace Hub",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "workspaceHub.duplicate",
+        "title": "Duplicate Workspace",
+        "category": "Workspace Hub",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "workspaceHub.toggleFavorite",
+        "title": "Toggle Favorite",
+        "category": "Workspace Hub",
+        "icon": "$(star-empty)"
+      },
+      {
+        "command": "workspaceHub.togglePin",
+        "title": "Toggle Pin",
+        "category": "Workspace Hub",
+        "icon": "$(pin)"
+      },
+      {
+        "command": "workspaceHub.addToGroup",
+        "title": "Add to Group...",
+        "category": "Workspace Hub"
+      },
+      {
+        "command": "workspaceHub.removeFromGroup",
+        "title": "Remove from Group",
+        "category": "Workspace Hub",
+        "icon": "$(close)"
+      },
+      {
+        "command": "workspaceHub.createGroup",
+        "title": "Create Group...",
+        "category": "Workspace Hub",
+        "icon": "$(add)"
+      },
+      {
+        "command": "workspaceHub.renameGroup",
+        "title": "Rename Group...",
+        "category": "Workspace Hub"
+      },
+      {
+        "command": "workspaceHub.deleteGroup",
+        "title": "Delete Group",
+        "category": "Workspace Hub"
+      },
+      {
+        "command": "workspaceHub.setGroupColor",
+        "title": "Set Group Color...",
+        "category": "Workspace Hub"
+      },
+      {
+        "command": "workspaceHub.quickSwitch",
+        "title": "Quick Switch Workspace",
+        "category": "Workspace Hub"
+      },
+      {
+        "command": "workspaceHub.search",
+        "title": "Search Workspaces",
+        "category": "Workspace Hub",
+        "icon": "$(search)"
+      },
+      {
+        "command": "workspaceHub.revealInOS",
+        "title": "Reveal in Finder/Explorer",
+        "category": "Workspace Hub",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "workspaceHub.copyPath",
+        "title": "Copy Path",
+        "category": "Workspace Hub"
+      },
+      {
+        "command": "workspaceHub.toggleViewMode",
+        "title": "Toggle Tree/List View",
+        "category": "Workspace Hub",
+        "icon": "$(list-tree)"
+      },
+      {
+        "command": "workspaceHub.sortBy",
+        "title": "Sort By...",
+        "category": "Workspace Hub",
+        "icon": "$(sort-precedence)"
+      },
+      {
+        "command": "workspaceHub.refresh",
+        "title": "Refresh",
+        "category": "Workspace Hub",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "workspaceHub.collapseAll",
+        "title": "Collapse All",
+        "category": "Workspace Hub",
+        "icon": "$(collapse-all)"
+      },
+      {
+        "command": "workspaceHub.clearRecent",
+        "title": "Clear Recent",
+        "category": "Workspace Hub",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "workspaceHub.configureSearchFolders",
+        "title": "Configure Search Folders...",
+        "category": "Workspace Hub"
+      },
+      {
+        "command": "workspaceHub.addSearchFolder",
+        "title": "Add Search Folder",
+        "category": "Workspace Hub",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "workspaceHub.removeSearchFolder",
+        "title": "Remove Search Folder",
+        "category": "Workspace Hub",
+        "icon": "$(remove)"
+      },
+      {
+        "command": "workspaceHub.removeSearchFolderItem",
+        "title": "Remove Search Folder",
+        "category": "Workspace Hub",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "workspaceHub.toggleIncludeGitFolders",
+        "title": "✓ Include Git Folders",
+        "category": "Workspace Hub"
+      },
+      {
+        "command": "workspaceHub.toggleIncludeGitFoldersOff",
+        "title": "Include Git Folders",
+        "category": "Workspace Hub"
+      },
+      {
+        "command": "workspaceHub.removeFavorite",
+        "title": "Remove from Favorites",
+        "category": "Workspace Hub",
+        "icon": "$(star-full)"
+      },
+      {
+        "command": "workspaceHub.removePin",
+        "title": "Unpin",
+        "category": "Workspace Hub",
+        "icon": "$(pinned)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "workspaceHub.quickSwitch",
+        "key": "ctrl+alt+w",
+        "mac": "cmd+alt+w"
+      },
+      {
+        "command": "workspaceHub.search",
+        "key": "ctrl+shift+alt+w",
+        "mac": "cmd+shift+alt+w"
+      },
+      {
+        "command": "workspaceHub.create",
+        "key": "ctrl+alt+n",
+        "mac": "cmd+alt+n"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "workspaceHub.search",
+          "when": "view == workspaceHub.all",
+          "group": "navigation@1"
+        },
+        {
+          "command": "workspaceHub.toggleViewMode",
+          "when": "view == workspaceHub.all",
+          "group": "navigation@2"
+        },
+        {
+          "command": "workspaceHub.refresh",
+          "when": "view == workspaceHub.all",
+          "group": "navigation@3"
+        },
+        {
+          "command": "workspaceHub.create",
+          "when": "view == workspaceHub.all",
+          "group": "navigation@4"
+        },
+        {
+          "command": "workspaceHub.addSearchFolder",
+          "when": "view == workspaceHub.all",
+          "group": "2_searchFolders@1"
+        },
+        {
+          "command": "workspaceHub.removeSearchFolder",
+          "when": "view == workspaceHub.all && workspaceHub.hasSearchFolders",
+          "group": "2_searchFolders@2"
+        },
+        {
+          "command": "workspaceHub.sortBy",
+          "when": "view == workspaceHub.all",
+          "group": "1_sort"
+        },
+        {
+          "command": "workspaceHub.toggleIncludeGitFolders",
+          "when": "view == workspaceHub.all && workspaceHub.includeGitFolders",
+          "group": "3_options"
+        },
+        {
+          "command": "workspaceHub.toggleIncludeGitFoldersOff",
+          "when": "view == workspaceHub.all && !workspaceHub.includeGitFolders",
+          "group": "3_options"
+        },
+        {
+          "command": "workspaceHub.collapseAll",
+          "when": "view == workspaceHub.all && workspaceHub.viewMode == tree",
+          "group": "navigation@5"
+        },
+        {
+          "command": "workspaceHub.createGroup",
+          "when": "view == workspaceHub.groups",
+          "group": "navigation@1"
+        },
+        {
+          "command": "workspaceHub.refresh",
+          "when": "view == workspaceHub.groups",
+          "group": "navigation@2"
+        },
+        {
+          "command": "workspaceHub.clearRecent",
+          "when": "view == workspaceHub.recent",
+          "group": "navigation@1"
+        },
+        {
+          "command": "workspaceHub.refresh",
+          "when": "view == workspaceHub.recent",
+          "group": "navigation@2"
+        },
+        {
+          "command": "workspaceHub.refresh",
+          "when": "view == workspaceHub.favorites",
+          "group": "navigation@1"
+        },
+        {
+          "command": "workspaceHub.refresh",
+          "when": "view == workspaceHub.pinned",
+          "group": "navigation@1"
+        },
+        {
+          "command": "workspaceHub.addSearchFolder",
+          "when": "view == workspaceHub.searchFolders",
+          "group": "navigation@1"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "workspaceHub.revealInOS",
+          "when": "viewItem =~ /^workspace/",
+          "group": "inline@1"
+        },
+        {
+          "command": "workspaceHub.openNewWindow",
+          "when": "viewItem =~ /^workspace/",
+          "group": "inline@2"
+        },
+        {
+          "command": "workspaceHub.toggleFavorite",
+          "when": "viewItem =~ /^workspace/ && !(viewItem =~ /\\.favorite/)",
+          "group": "inline@3"
+        },
+        {
+          "command": "workspaceHub.removeFavorite",
+          "when": "viewItem =~ /\\.favorite/",
+          "group": "inline@3"
+        },
+        {
+          "command": "workspaceHub.removeFromGroup",
+          "when": "viewItem =~ /\\.grouped/ && view == workspaceHub.groups",
+          "group": "inline@4"
+        },
+        {
+          "command": "workspaceHub.open",
+          "when": "viewItem =~ /^workspace/",
+          "group": "1_open@1"
+        },
+        {
+          "command": "workspaceHub.openNewWindow",
+          "when": "viewItem =~ /^workspace/",
+          "group": "1_open@2"
+        },
+        {
+          "command": "workspaceHub.toggleFavorite",
+          "when": "viewItem =~ /^workspace/",
+          "group": "2_organize@1"
+        },
+        {
+          "command": "workspaceHub.togglePin",
+          "when": "viewItem =~ /^workspace/",
+          "group": "2_organize@2"
+        },
+        {
+          "command": "workspaceHub.addToGroup",
+          "when": "viewItem =~ /^workspace/",
+          "group": "2_organize@3"
+        },
+        {
+          "command": "workspaceHub.rename",
+          "when": "viewItem =~ /^workspace/",
+          "group": "3_modify@1"
+        },
+        {
+          "command": "workspaceHub.duplicate",
+          "when": "viewItem =~ /^workspace/",
+          "group": "3_modify@2"
+        },
+        {
+          "command": "workspaceHub.delete",
+          "when": "viewItem =~ /^workspace/",
+          "group": "3_modify@3"
+        },
+        {
+          "command": "workspaceHub.revealInOS",
+          "when": "viewItem =~ /^workspace/",
+          "group": "4_utils@1"
+        },
+        {
+          "command": "workspaceHub.copyPath",
+          "when": "viewItem =~ /^workspace/",
+          "group": "4_utils@2"
+        },
+        {
+          "command": "workspaceHub.renameGroup",
+          "when": "viewItem == group",
+          "group": "1_group@1"
+        },
+        {
+          "command": "workspaceHub.setGroupColor",
+          "when": "viewItem == group",
+          "group": "1_group@2"
+        },
+        {
+          "command": "workspaceHub.deleteGroup",
+          "when": "viewItem == group",
+          "group": "1_group@3"
+        },
+        {
+          "command": "workspaceHub.revealInOS",
+          "when": "viewItem == searchFolder",
+          "group": "inline@1"
+        },
+        {
+          "command": "workspaceHub.removeSearchFolderItem",
+          "when": "viewItem == searchFolder",
+          "group": "inline@2"
+        },
+        {
+          "command": "workspaceHub.removeSearchFolderItem",
+          "when": "viewItem == searchFolder",
+          "group": "1_manage@1"
+        },
+        {
+          "command": "workspaceHub.revealInOS",
+          "when": "viewItem == searchFolder",
+          "group": "2_utils@1"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Workspace Hub",
+      "properties": {
+        "workspaceHub.searchFolders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Root folders to scan for .code-workspace files."
+        },
+        "workspaceHub.searchDepth": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum recursion depth when scanning for workspaces."
+        },
+        "workspaceHub.excludePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/node_modules/**",
+            "**/.git/**",
+            "**/bower_components/**",
+            "**/.hg/**",
+            "**/.svn/**",
+            "**/dist/**",
+            "**/build/**",
+            "**/.next/**",
+            "**/.nuxt/**"
+          ],
+          "description": "Glob patterns to exclude from workspace scanning."
+        },
+        "workspaceHub.includeGitFolders": {
+          "type": "boolean",
+          "default": true,
+          "description": "Treat folders containing .git as workspaces."
+        },
+        "workspaceHub.viewMode": {
+          "type": "string",
+          "enum": [
+            "tree",
+            "list"
+          ],
+          "default": "tree",
+          "description": "Display mode for All Workspaces view."
+        },
+        "workspaceHub.sortField": {
+          "type": "string",
+          "enum": [
+            "name",
+            "lastModified",
+            "lastOpened",
+            "frequency"
+          ],
+          "default": "name",
+          "description": "Sort criterion for workspaces."
+        },
+        "workspaceHub.sortDirection": {
+          "type": "string",
+          "enum": [
+            "asc",
+            "desc"
+          ],
+          "default": "asc",
+          "description": "Sort direction."
+        },
+        "workspaceHub.showStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show current workspace in the status bar."
+        },
+        "workspaceHub.statusBarAlignment": {
+          "type": "string",
+          "enum": [
+            "left",
+            "right"
+          ],
+          "default": "left",
+          "description": "Status bar item alignment."
+        },
+        "workspaceHub.recentCount": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 50,
+          "description": "Maximum number of recent workspaces to remember."
+        },
+        "workspaceHub.cacheExpiration": {
+          "type": "number",
+          "default": 300,
+          "minimum": 0,
+          "description": "Cache TTL in seconds (0 to disable)."
+        },
+        "workspaceHub.showFileIcons": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use file theme icons for workspaces."
+        },
+        "workspaceHub.condenseFolders": {
+          "type": "boolean",
+          "default": true,
+          "description": "Merge single-child folders in tree view."
+        },
+        "workspaceHub.confirmDelete": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show confirmation dialog before deleting a workspace."
+        },
+        "workspaceHub.autoRefresh": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically refresh when workspace files change."
+        },
+        "workspaceHub.showPreviewOnHover": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show rich tooltips on hover."
+        },
+        "workspaceHub.quickSwitchShowRecent": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show recent workspaces in quick switch palette."
+        },
+        "workspaceHub.statusBarPriority": {
+          "type": "number",
+          "default": 100,
+          "description": "Status bar item priority (higher = more left)."
+        }
+      }
+    },
+    "viewsWelcome": [
+      {
+        "view": "workspaceHub.searchFolders",
+        "contents": "No search folders configured.\n[Add Search Folder](command:workspaceHub.addSearchFolder)"
+      },
+      {
+        "view": "workspaceHub.all",
+        "contents": "No workspaces found.\n[Configure Search Folders](command:workspaceHub.configureSearchFolders)\n[Create Workspace](command:workspaceHub.create)"
+      },
+      {
+        "view": "workspaceHub.groups",
+        "contents": "No groups yet.\n[Create Group](command:workspaceHub.createGroup)"
+      },
+      {
+        "view": "workspaceHub.favorites",
+        "contents": "No favorites yet.\nRight-click a workspace and select \"Toggle Favorite\" to add it here."
+      },
+      {
+        "view": "workspaceHub.recent",
+        "contents": "No recent workspaces.\nOpen a workspace to see it here."
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -noEmit && node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "build": "node esbuild.mjs --production",
+    "lint": "eslint src/",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/test-electron": "^2.3.8",
+    "@vscode/vsce": "^2.22.0",
+    "esbuild": "^0.19.11",
+    "typescript": "^5.6.0",
+    "vitest": "^1.2.0"
+  }
+}
