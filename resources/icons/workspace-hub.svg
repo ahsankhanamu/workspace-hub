@@ -1,7 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M3 3h7v7H3z"/>
-  <path d="M14 3h7v7h-7z"/>
-  <path d="M3 14h7v7H3z"/>
-  <path d="M14 14h7v7h-7z"/>
-  <circle cx="12" cy="12" r="3" fill="currentColor"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 128 128">
+  <defs>
+    <mask id="bracketMask">
+      <rect width="128" height="128" fill="white"/>
+      <!-- Cut out the brackets -->
+      <g stroke="black" stroke-width="6" stroke-linecap="round" fill="none">
+        <polyline points="44,74 36,82 44,90"/>
+        <polyline points="84,74 92,82 84,90"/>
+        <line x1="72" y1="70" x2="56" y2="94"/>
+      </g>
+    </mask>
+  </defs>
+
+  <!-- Back folder -->
+  <path d="M14,28 H30 L35,36 H90 Q94,36 94,40 V80 Q94,84 90,84 H14 Q10,84 10,80 V32 Q10,28 14,28Z" fill="currentColor" opacity="0.25"/>
+
+  <!-- Middle folder -->
+  <path d="M20,40 H36 L41,48 H96 Q100,48 100,52 V90 Q100,94 96,94 H20 Q16,94 16,90 V44 Q16,40 20,40Z" fill="currentColor" opacity="0.5"/>
+
+  <!-- Front folder with brackets cut out -->
+  <path d="M26,52 H42 L47,60 H102 Q106,60 106,64 V100 Q106,104 102,104 H26 Q22,104 22,100 V56 Q22,52 26,52Z" fill="currentColor" opacity="0.85" mask="url(#bracketMask)"/>
 </svg>

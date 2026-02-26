@@ -1,10 +1,19 @@
 {
   "name": "workspace-hub",
   "displayName": "Workspace Hub",
-  "description": "Best-in-class VS Code workspace manager — discover, organize, and switch workspaces with favorites, groups, and more.",
+  "description": "Discover, organize, and switch workspaces effortlessly — with favorites, groups, pinned workspaces, search folders, and quick switch.",
   "version": "0.1.0",
   "publisher": "ahsankhanamu",
   "license": "MIT",
+  "icon": "resources/icons/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ahsankhanamu/workspace-hub"
+  },
+  "homepage": "https://github.com/ahsankhanamu/workspace-hub#readme",
+  "bugs": {
+    "url": "https://github.com/ahsankhanamu/workspace-hub/issues"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -16,7 +25,10 @@
     "manager",
     "project",
     "switcher",
-    "favorites"
+    "favorites",
+    "groups",
+    "organizer",
+    "workspace-manager"
   ],
   "activationEvents": [
     "onStartupFinished"

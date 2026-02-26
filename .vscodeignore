@@ -8,3 +8,6 @@ vitest.config.ts
 esbuild.mjs
 *.vsix
 .gitignore
+.DS_Store
+resources/icons/icon.svg
+resources/icons/icon-v1.svg
