@@ -35,6 +35,15 @@ export class WorkspaceTreeProvider extends BaseTreeProvider<AllTreeItem> {
     this.viewMode = getViewMode();
   }
 
+  protected override createWorkspaceTreeItem(entry: WorkspaceEntry, isGrouped = false): WorkspaceTreeItem {
+    return new WorkspaceTreeItem(
+      entry,
+      this.stateService.isFavorite(entry.filePath),
+      this.stateService.isPinned(entry.filePath),
+      isGrouped,
+    );
+  }
+
   get filterText(): string {
     return this._filterText;
   }
