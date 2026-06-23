@@ -202,9 +202,11 @@ export class WorkspaceTreeProvider extends BaseTreeProvider<AllTreeItem> {
       items.push(this.createWorkspaceTreeItem(entry));
     }
 
+    const foldersToAppend: AllTreeItem[] = [];
+
     // Then folder workspaces
     for (const entry of folderWorkspaces) {
-      items.push(this.createWorkspaceTreeItem(entry));
+      foldersToAppend.push(this.createWorkspaceTreeItem(entry));
     }
 
     const folderItems: FolderTreeItem[] = [];
@@ -230,10 +232,22 @@ export class WorkspaceTreeProvider extends BaseTreeProvider<AllTreeItem> {
       }
     }
     
-    items.push(...folderItems);
+    foldersToAppend.push(...folderItems);
 
     // Scan for bare folders — subdirectories on disk that have no workspace entry
-    await this.scanBareFolders(node, childFolderPaths, onDiskDirs, items);
+    await this.scanBareFolders(node, childFolderPaths, onDiskDirs, foldersToAppend);
+
+    // Sort folders alphabetically
+    foldersToAppend.sort((a, b) => {
+      const getSortName = (item: AllTreeItem) => {
+        if ('workspace' in item && item.workspace) return item.workspace.name;
+        if ('folderName' in item) return (item as any).folderName;
+        return (item.label as string) || '';
+      };
+      return getSortName(a).localeCompare(getSortName(b));
+    });
+
+    items.push(...foldersToAppend);
 
     return items;
   }

@@ -20,12 +20,6 @@ export class WorkspaceTreeItem extends vscode.TreeItem {
     this.description = this.buildDescription();
     this.contextValue = this.buildContextValue();
 
-    this.command = {
-      command: 'workspaceHub.open',
-      title: 'Open Workspace',
-      arguments: [this],
-    };
-
     // Icon
     if (isPinned) {
       this.iconPath = new vscode.ThemeIcon('pinned', new vscode.ThemeColor('charts.yellow'));

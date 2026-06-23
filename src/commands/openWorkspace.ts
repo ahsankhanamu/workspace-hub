@@ -1,19 +1,19 @@
 import * as vscode from 'vscode';
 import { WorkspaceEntry } from '../models/WorkspaceEntry.js';
-import { WorkspaceTreeItem, BareFolderTreeItem } from '../models/TreeItems.js';
+import { WorkspaceTreeItem, BareFolderTreeItem, FolderTreeItem, SearchFolderTreeItem } from '../models/TreeItems.js';
 import type { WorkspaceStateService } from '../services/WorkspaceStateService.js';
 
 export function openWorkspace(
   stateService: WorkspaceStateService,
-  itemOrEntry: WorkspaceTreeItem | WorkspaceEntry | BareFolderTreeItem | undefined,
+  itemOrEntry: WorkspaceTreeItem | WorkspaceEntry | BareFolderTreeItem | FolderTreeItem | SearchFolderTreeItem | undefined,
   newWindow = false,
 ): void {
   let entry: WorkspaceEntry | undefined;
   
   if (itemOrEntry instanceof WorkspaceTreeItem) {
     entry = itemOrEntry.workspace;
-  } else if (itemOrEntry instanceof BareFolderTreeItem) {
-    // Treat the bare folder as a temporary workspace entry for opening
+  } else if (itemOrEntry instanceof BareFolderTreeItem || itemOrEntry instanceof FolderTreeItem || itemOrEntry instanceof SearchFolderTreeItem) {
+    // Treat the folder as a temporary workspace entry for opening
     entry = WorkspaceEntry.fromGitFolder(itemOrEntry.folderPath, 0);
   } else {
     entry = itemOrEntry;

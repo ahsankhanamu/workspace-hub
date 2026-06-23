@@ -30,6 +30,7 @@ import { createCrudCommands } from './commands/crudCommands.js';
 import { createUtilityCommands } from './commands/utilityCommands.js';
 import { SearchFolderTreeItem, BareFolderTreeItem } from './models/TreeItems.js';
 import { getSearchFolders, updateConfig } from './utils/configUtils.js';
+import { WorkspaceDragAndDropController } from './providers/WorkspaceDragAndDropController.js';
 
 export function activate(context: vscode.ExtensionContext): void {
   // ── Services ──────────────────────────────────────
@@ -60,13 +61,15 @@ export function activate(context: vscode.ExtensionContext): void {
   const utilCmds = createUtilityCommands(workspaceTreeProvider, stateService);
 
   // ── Register Views ────────────────────────────────
+  const dndController = new WorkspaceDragAndDropController();
+  
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider(VIEW_ID_ALL, workspaceTreeProvider),
-    vscode.window.registerTreeDataProvider(VIEW_ID_FAVORITES, favoritesTreeProvider),
-    vscode.window.registerTreeDataProvider(VIEW_ID_GROUPS, groupsTreeProvider),
-    vscode.window.registerTreeDataProvider(VIEW_ID_RECENT, recentTreeProvider),
-    vscode.window.registerTreeDataProvider(VIEW_ID_PINNED, pinnedTreeProvider),
-    vscode.window.registerTreeDataProvider(VIEW_ID_SEARCH_FOLDERS, searchFoldersTreeProvider),
+    vscode.window.createTreeView(VIEW_ID_ALL, { treeDataProvider: workspaceTreeProvider, dragAndDropController: dndController }),
+    vscode.window.createTreeView(VIEW_ID_FAVORITES, { treeDataProvider: favoritesTreeProvider, dragAndDropController: dndController }),
+    vscode.window.createTreeView(VIEW_ID_GROUPS, { treeDataProvider: groupsTreeProvider, dragAndDropController: dndController }),
+    vscode.window.createTreeView(VIEW_ID_RECENT, { treeDataProvider: recentTreeProvider, dragAndDropController: dndController }),
+    vscode.window.createTreeView(VIEW_ID_PINNED, { treeDataProvider: pinnedTreeProvider, dragAndDropController: dndController }),
+    vscode.window.createTreeView(VIEW_ID_SEARCH_FOLDERS, { treeDataProvider: searchFoldersTreeProvider, dragAndDropController: dndController }),
     vscode.window.registerFileDecorationProvider(decorationProvider),
   );
 
