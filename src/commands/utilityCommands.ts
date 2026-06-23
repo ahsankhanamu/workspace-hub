@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { WorkspaceTreeItem, SearchFolderTreeItem, BareFolderTreeItem } from '../models/TreeItems.js';
+import { WorkspaceTreeItem, SearchFolderTreeItem, BareFolderTreeItem, FolderTreeItem } from '../models/TreeItems.js';
 import { CONFIG, CTX } from '../constants.js';
 import type { WorkspaceTreeProvider } from '../providers/WorkspaceTreeProvider.js';
 import type { WorkspaceStateService } from '../services/WorkspaceStateService.js';
@@ -10,8 +10,8 @@ export function createUtilityCommands(
   stateService: WorkspaceStateService,
 ) {
   return {
-    revealInOS: (item?: WorkspaceTreeItem | SearchFolderTreeItem | BareFolderTreeItem) => {
-      if (item instanceof SearchFolderTreeItem || item instanceof BareFolderTreeItem) {
+    revealInOS: (item?: any) => {
+      if (item instanceof SearchFolderTreeItem || item instanceof BareFolderTreeItem || item instanceof FolderTreeItem) {
         void vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(item.folderPath));
         return;
       }
