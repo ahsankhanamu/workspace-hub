@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import type { WorkspaceCrudService } from '../services/WorkspaceCrudService.js';
 import type { InputFlowManager } from '../ui/InputFlowManager.js';
-import { WorkspaceTreeItem } from '../models/TreeItems.js';
+import { WorkspaceTreeItem, BareFolderTreeItem, WorkspaceFolderTreeItem } from '../models/TreeItems.js';
 
 export function createCrudCommands(
   crudService: WorkspaceCrudService,
@@ -72,6 +72,39 @@ export function createCrudCommands(
       }
     },
 
+    createWorkspaceFile: async (item?: BareFolderTreeItem | WorkspaceTreeItem) => {
+      let folderPath: string | undefined;
+      let folderName: string | undefined;
+
+      if (item instanceof BareFolderTreeItem) {
+        folderPath = item.folderPath;
+        folderName = item.folderName;
+      } else if (item instanceof WorkspaceTreeItem && !item.workspace.isWorkspaceFile) {
+        folderPath = item.workspace.filePath;
+        folderName = item.workspace.name;
+      }
+
+      if (!folderPath || !folderName) { return; }
+
+      try {
+        const filePath = await crudService.createWorkspaceFileForFolder(folderPath);
+        const action = await vscode.window.showInformationMessage(
+          `Created workspace file for "${folderName}"`,
+          'Open',
+          'Open in New Window',
+        );
+
+        if (action === 'Open' || action === 'Open in New Window') {
+          const uri = vscode.Uri.file(filePath);
+          await vscode.commands.executeCommand('vscode.openFolder', uri, {
+            forceNewWindow: action === 'Open in New Window',
+          });
+        }
+      } catch (err) {
+        vscode.window.showErrorMessage(`Failed to create workspace file: ${(err as Error).message}`);
+      }
+    },
+
     duplicate: async (item?: WorkspaceTreeItem) => {
       if (!item?.workspace) { return; }
       if (!item.workspace.isWorkspaceFile) {
@@ -84,6 +117,38 @@ export function createCrudCommands(
         vscode.window.showInformationMessage(`Duplicated workspace: ${newPath}`);
       } catch (err) {
         vscode.window.showErrorMessage(`Failed to duplicate workspace: ${(err as Error).message}`);
+      }
+    },
+
+    addFolder: async (item?: WorkspaceTreeItem) => {
+      if (!item?.workspace || !item.workspace.isWorkspaceFile) { return; }
+      const folderUris = await vscode.window.showOpenDialog({
+        canSelectFiles: false,
+        canSelectFolders: true,
+        canSelectMany: true,
+        openLabel: 'Add Folder',
+        title: 'Choose folders to add to the workspace',
+      });
+
+      if (folderUris && folderUris.length > 0) {
+        try {
+          for (const uri of folderUris) {
+            await crudService.addFolderToWorkspace(item.workspace.filePath, uri.fsPath);
+          }
+          vscode.window.showInformationMessage(`Added folders to workspace.`);
+        } catch (err) {
+          vscode.window.showErrorMessage(`Failed to add folder: ${(err as Error).message}`);
+        }
+      }
+    },
+
+    removeFolder: async (item?: WorkspaceFolderTreeItem) => {
+      if (!item?.workspaceFilePath || !item.folderPath) { return; }
+      
+      try {
+        await crudService.removeFolderFromWorkspace(item.workspaceFilePath, item.folderPath);
+      } catch (err) {
+        vscode.window.showErrorMessage(`Failed to remove folder: ${(err as Error).message}`);
       }
     },
   };

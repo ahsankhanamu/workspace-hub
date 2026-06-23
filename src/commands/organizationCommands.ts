@@ -1,45 +1,62 @@
 import * as vscode from 'vscode';
 import type { WorkspaceStateService } from '../services/WorkspaceStateService.js';
 import type { WorkspaceDiscoveryService } from '../services/WorkspaceDiscoveryService.js';
-import { WorkspaceTreeItem, GroupTreeItem } from '../models/TreeItems.js';
+import { WorkspaceTreeItem, GroupTreeItem, BareFolderTreeItem } from '../models/TreeItems.js';
 
 export function createOrganizationCommands(
   stateService: WorkspaceStateService,
   discoveryService: WorkspaceDiscoveryService,
 ) {
+  const getPath = (item?: WorkspaceTreeItem | BareFolderTreeItem) => {
+    if (item instanceof BareFolderTreeItem) return item.folderPath;
+    if (item?.workspace) return item.workspace.filePath;
+    return undefined;
+  };
+  
+  const getName = (item?: WorkspaceTreeItem | BareFolderTreeItem) => {
+    if (item instanceof BareFolderTreeItem) return item.folderName;
+    if (item?.workspace) return item.workspace.name;
+    return undefined;
+  };
+
   return {
-    toggleFavorite: async (item?: WorkspaceTreeItem) => {
-      if (!item?.workspace) { return; }
-      await stateService.toggleFavorite(item.workspace.filePath);
+    toggleFavorite: async (item?: WorkspaceTreeItem | BareFolderTreeItem) => {
+      const p = getPath(item);
+      if (!p) return;
+      await stateService.toggleFavorite(p);
     },
 
-    removeFavorite: async (item?: WorkspaceTreeItem) => {
-      if (!item?.workspace) { return; }
-      await stateService.removeFavorite(item.workspace.filePath);
+    removeFavorite: async (item?: WorkspaceTreeItem | BareFolderTreeItem) => {
+      const p = getPath(item);
+      if (!p) return;
+      await stateService.removeFavorite(p);
     },
 
-    togglePin: async (item?: WorkspaceTreeItem) => {
-      if (!item?.workspace) { return; }
-      const added = await stateService.togglePin(item.workspace.filePath);
+    togglePin: async (item?: WorkspaceTreeItem | BareFolderTreeItem) => {
+      const p = getPath(item);
+      if (!p) return;
+      const added = await stateService.togglePin(p);
       vscode.window.showInformationMessage(
-        added ? `Pinned "${item.workspace.name}"` : `Unpinned "${item.workspace.name}"`,
+        added ? `Pinned "${getName(item)}"` : `Unpinned "${getName(item)}"`,
       );
     },
 
-    removePin: async (item?: WorkspaceTreeItem) => {
-      if (!item?.workspace) { return; }
-      await stateService.removePin(item.workspace.filePath);
+    removePin: async (item?: WorkspaceTreeItem | BareFolderTreeItem) => {
+      const p = getPath(item);
+      if (!p) return;
+      await stateService.removePin(p);
     },
 
-    addToGroup: async (item?: WorkspaceTreeItem) => {
-      if (!item?.workspace) { return; }
+    addToGroup: async (item?: WorkspaceTreeItem | BareFolderTreeItem) => {
+      const p = getPath(item);
+      if (!p) return;
       const groups = stateService.getGroups();
 
       if (groups.length === 0) {
         const name = await vscode.window.showInputBox({ prompt: 'Enter group name' });
         if (!name) { return; }
         const group = await stateService.createGroup(name);
-        await stateService.addToGroup(group.id, item.workspace.filePath);
+        await stateService.addToGroup(group.id, p);
         return;
       }
 
@@ -60,24 +77,25 @@ export function createOrganizationCommands(
         const name = await vscode.window.showInputBox({ prompt: 'Enter group name' });
         if (!name) { return; }
         const group = await stateService.createGroup(name);
-        await stateService.addToGroup(group.id, item.workspace.filePath);
+        await stateService.addToGroup(group.id, p);
       } else {
-        await stateService.addToGroup(selected.groupId, item.workspace.filePath);
+        await stateService.addToGroup(selected.groupId, p);
       }
     },
 
-    removeFromGroup: async (item?: WorkspaceTreeItem) => {
-      if (!item?.workspace) { return; }
-      const groups = stateService.getGroupsForWorkspace(item.workspace.filePath);
+    removeFromGroup: async (item?: WorkspaceTreeItem | BareFolderTreeItem) => {
+      const p = getPath(item);
+      if (!p) return;
+      const groups = stateService.getGroupsForWorkspace(p);
       if (groups.length === 1) {
-        await stateService.removeFromGroup(groups[0].id, item.workspace.filePath);
+        await stateService.removeFromGroup(groups[0].id, p);
       } else if (groups.length > 1) {
         const selected = await vscode.window.showQuickPick(
           groups.map(g => ({ label: g.name, groupId: g.id })),
           { placeHolder: 'Remove from which group?' },
         );
         if (selected) {
-          await stateService.removeFromGroup(selected.groupId, item.workspace.filePath);
+          await stateService.removeFromGroup(selected.groupId, p);
         }
       }
     },

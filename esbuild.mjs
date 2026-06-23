@@ -15,6 +15,7 @@ const buildOptions = {
   sourcemap: !isProduction,
   minify: isProduction,
   treeShaking: true,
+  mainFields: ['module', 'main'],
 };
 
 if (isWatch) {

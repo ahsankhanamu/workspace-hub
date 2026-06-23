@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import type { WorkspaceEntry } from './WorkspaceEntry.js';
 import type { GroupEntry } from './GroupEntry.js';
 
@@ -9,7 +10,10 @@ export class WorkspaceTreeItem extends vscode.TreeItem {
     public readonly isPinned: boolean = false,
     public readonly isGrouped: boolean = false,
   ) {
-    super(workspace.name, vscode.TreeItemCollapsibleState.None);
+    super(
+      workspace.name, 
+      workspace.isWorkspaceFile ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
+    );
 
     this.resourceUri = vscode.Uri.file(workspace.filePath);
     this.tooltip = this.buildTooltip();
@@ -54,11 +58,16 @@ export class WorkspaceTreeItem extends vscode.TreeItem {
   }
 
   private buildDescription(): string {
-    return this.workspace.directory;
+    let desc = this.workspace.directory;
+    if (this.workspace.isWorkspaceFile && this.workspace.folders) {
+      desc += ` • ${this.workspace.folders.length} folder${this.workspace.folders.length !== 1 ? 's' : ''}`;
+    }
+    return desc;
   }
 
   private buildContextValue(): string {
     let ctx = 'workspace';
+    if (!this.workspace.isWorkspaceFile) { ctx += '.folderWorkspace'; }
     if (this.isFavorite) { ctx += '.favorite'; }
     if (this.isPinned) { ctx += '.pinned'; }
     if (this.isGrouped) { ctx += '.grouped'; }
@@ -76,6 +85,7 @@ export class FolderTreeItem extends vscode.TreeItem {
     this.contextValue = 'folder';
     this.iconPath = vscode.ThemeIcon.Folder;
     this.tooltip = folderPath;
+    this.resourceUri = vscode.Uri.file(folderPath);
   }
 }
 
@@ -91,6 +101,21 @@ export class SearchFolderTreeItem extends vscode.TreeItem {
     this.description = folderPath.replace(/^\/Users\/[^/]+/, '~');
     this.iconPath = new vscode.ThemeIcon('folder-library');
     this.tooltip = folderPath;
+    this.resourceUri = vscode.Uri.file(folderPath);
+  }
+}
+
+export class BareFolderTreeItem extends vscode.TreeItem {
+  constructor(
+    public readonly folderName: string,
+    public readonly folderPath: string,
+  ) {
+    super(folderName, vscode.TreeItemCollapsibleState.None);
+    this.contextValue = 'bareFolder';
+    this.iconPath = new vscode.ThemeIcon('folder');
+    this.tooltip = `${folderPath}\n\nNo workspace file found. Click to create one.`;
+    this.description = path.dirname(folderPath).replace(/^\/Users\/[^/]+/, '~');
+    this.resourceUri = vscode.Uri.file(folderPath);
   }
 }
 
@@ -105,5 +130,21 @@ export class GroupTreeItem extends vscode.TreeItem {
     } else {
       this.iconPath = new vscode.ThemeIcon('folder-library');
     }
+  }
+}
+
+export class WorkspaceFolderTreeItem extends vscode.TreeItem {
+  constructor(
+    public readonly folderPath: string,
+    public readonly workspaceFilePath: string,
+  ) {
+    const folderName = path.basename(folderPath) || folderPath;
+    super(folderName, vscode.TreeItemCollapsibleState.None);
+    
+    this.contextValue = 'workspaceFolder';
+    this.iconPath = vscode.ThemeIcon.Folder;
+    this.tooltip = folderPath;
+    this.description = folderPath;
+    this.resourceUri = vscode.Uri.file(folderPath);
   }
 }

@@ -2,9 +2,10 @@ import * as vscode from 'vscode';
 import { BaseTreeProvider } from './BaseTreeProvider.js';
 import type { WorkspaceDiscoveryService } from '../services/WorkspaceDiscoveryService.js';
 import type { WorkspaceStateService } from '../services/WorkspaceStateService.js';
-import { WorkspaceTreeItem, GroupTreeItem } from '../models/TreeItems.js';
+import { WorkspaceTreeItem, GroupTreeItem, WorkspaceFolderTreeItem } from '../models/TreeItems.js';
+import { WorkspaceEntry } from '../models/WorkspaceEntry.js';
 
-type GroupItem = GroupTreeItem | WorkspaceTreeItem;
+type GroupItem = GroupTreeItem | WorkspaceTreeItem | WorkspaceFolderTreeItem;
 
 export class GroupsTreeProvider extends BaseTreeProvider<GroupItem> {
   constructor(
@@ -31,13 +32,18 @@ export class GroupsTreeProvider extends BaseTreeProvider<GroupItem> {
       const items: WorkspaceTreeItem[] = [];
 
       for (const wsPath of element.group.workspacePaths) {
-        const entry = allWorkspaces.find(w => w.filePath === wsPath);
-        if (entry) {
-          items.push(this.createWorkspaceTreeItem(entry, true));
+        let entry = allWorkspaces.find(w => w.filePath === wsPath);
+        if (!entry) {
+          entry = WorkspaceEntry.fromGitFolder(wsPath, 0);
         }
+        items.push(this.createWorkspaceTreeItem(entry, true));
       }
 
       return items;
+    }
+
+    if (element instanceof WorkspaceTreeItem) {
+      return this.getWorkspaceChildren(element) as GroupItem[];
     }
 
     return [];

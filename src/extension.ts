@@ -28,7 +28,7 @@ import { openWorkspace } from './commands/openWorkspace.js';
 import { createOrganizationCommands } from './commands/organizationCommands.js';
 import { createCrudCommands } from './commands/crudCommands.js';
 import { createUtilityCommands } from './commands/utilityCommands.js';
-import { SearchFolderTreeItem } from './models/TreeItems.js';
+import { SearchFolderTreeItem, BareFolderTreeItem } from './models/TreeItems.js';
 import { getSearchFolders, updateConfig } from './utils/configUtils.js';
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -119,6 +119,11 @@ export function activate(context: vscode.ExtensionContext): void {
   registerCommand(CMD.configureSearchFolders, utilCmds.configureSearchFolders);
   registerCommand(CMD.addSearchFolder, utilCmds.addSearchFolder);
   registerCommand(CMD.removeSearchFolder, utilCmds.removeSearchFolder);
+  registerCommand(CMD.filterWorkspaces, utilCmds.filterWorkspaces);
+  registerCommand(CMD.clearFilter, utilCmds.clearFilter);
+  registerCommand(CMD.createWorkspaceFile, crudCmds.createWorkspaceFile);
+  registerCommand(CMD.addFolderToWorkspace, crudCmds.addFolder);
+  registerCommand(CMD.removeFolderFromWorkspace, crudCmds.removeFolder);
   registerCommand(CMD.removeSearchFolderItem, async (item?: SearchFolderTreeItem) => {
     if (!item?.folderPath) { return; }
     const current = getSearchFolders();
@@ -209,6 +214,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // Set initial context values
   void stateService.initContext();
   void vscode.commands.executeCommand('setContext', CTX.viewMode, workspaceTreeProvider.getViewMode());
+  void vscode.commands.executeCommand('setContext', CTX.filterActive, false);
   const searchFolders = vscode.workspace.getConfiguration(CONFIG.section).get<string[]>(CONFIG.searchFolders, []);
   void vscode.commands.executeCommand('setContext', CTX.hasSearchFolders, searchFolders.length > 0);
   const includeGit = vscode.workspace.getConfiguration(CONFIG.section).get<boolean>(CONFIG.includeGitFolders, true);

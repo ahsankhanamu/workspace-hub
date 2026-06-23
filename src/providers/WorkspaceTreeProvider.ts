@@ -1,15 +1,16 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs/promises';
 import { BaseTreeProvider } from './BaseTreeProvider.js';
 import type { WorkspaceDiscoveryService } from '../services/WorkspaceDiscoveryService.js';
 import type { WorkspaceStateService } from '../services/WorkspaceStateService.js';
 import type { SortService } from '../services/SortService.js';
 import type { WorkspaceEntry } from '../models/WorkspaceEntry.js';
-import { WorkspaceTreeItem, FolderTreeItem } from '../models/TreeItems.js';
+import { WorkspaceTreeItem, FolderTreeItem, BareFolderTreeItem, WorkspaceFolderTreeItem } from '../models/TreeItems.js';
 import { getViewMode, getSortField, getSortDirection, getCondenseFolders, getSearchFolders } from '../utils/configUtils.js';
 import type { ViewMode } from '../types.js';
 
-type AllTreeItem = WorkspaceTreeItem | FolderTreeItem;
+type AllTreeItem = WorkspaceTreeItem | FolderTreeItem | BareFolderTreeItem | WorkspaceFolderTreeItem;
 
 interface FolderNode {
   name: string;
@@ -20,8 +21,10 @@ interface FolderNode {
 
 export class WorkspaceTreeProvider extends BaseTreeProvider<AllTreeItem> {
   private viewMode: ViewMode;
-  private folderTree: Map<string, FolderNode> = new Map();
+  private folderTree = new Map<string, FolderNode>();
+  private consumedFolderPaths = new Set<string>();
   private cachedEntries: WorkspaceEntry[] = [];
+  private _filterText = '';
 
   constructor(
     private readonly discoveryService: WorkspaceDiscoveryService,
@@ -30,6 +33,22 @@ export class WorkspaceTreeProvider extends BaseTreeProvider<AllTreeItem> {
   ) {
     super(stateService);
     this.viewMode = getViewMode();
+  }
+
+  get filterText(): string {
+    return this._filterText;
+  }
+
+  setFilter(text: string): void {
+    this._filterText = text;
+    void vscode.commands.executeCommand('setContext', 'workspaceHub.filterActive', text.length > 0);
+    this.refresh();
+  }
+
+  clearFilter(): void {
+    this._filterText = '';
+    void vscode.commands.executeCommand('setContext', 'workspaceHub.filterActive', false);
+    this.refresh();
   }
 
   getViewMode(): ViewMode {
@@ -59,7 +78,21 @@ export class WorkspaceTreeProvider extends BaseTreeProvider<AllTreeItem> {
       return this.getFolderChildren(element.folderPath);
     }
 
+    if (element instanceof WorkspaceTreeItem) {
+      return this.getWorkspaceChildren(element) as AllTreeItem[];
+    }
+
     return [];
+  }
+
+  private matchesFilter(entry: WorkspaceEntry): boolean {
+    if (!this._filterText) {
+      return true;
+    }
+    const q = this._filterText.toLowerCase();
+    return entry.name.toLowerCase().includes(q)
+      || entry.filePath.toLowerCase().includes(q)
+      || entry.directory.toLowerCase().includes(q);
   }
 
   private async getRootChildren(): Promise<AllTreeItem[]> {
@@ -69,21 +102,27 @@ export class WorkspaceTreeProvider extends BaseTreeProvider<AllTreeItem> {
     this.cachedEntries = this.sortService.sort(entries, sortField, sortDirection);
 
     if (this.viewMode === 'list') {
-      return this.cachedEntries.map(e => this.createWorkspaceTreeItem(e));
+      return this.cachedEntries.filter(e => this.matchesFilter(e)).map(e => this.createWorkspaceTreeItem(e));
     }
 
-    // Tree mode: build folder hierarchy
-    return this.buildTreeView();
+    return await this.buildTreeView();
   }
 
-  private buildTreeView(): AllTreeItem[] {
+  private async buildTreeView(): Promise<AllTreeItem[]> {
     const searchFolders = getSearchFolders();
     const condense = getCondenseFolders();
 
-    // Build folder tree from workspace entries
     this.folderTree.clear();
+    this.consumedFolderPaths.clear();
 
-    // Group entries by their search folder root
+    for (const entry of this.cachedEntries) {
+      if (entry.isWorkspaceFile && entry.folders) {
+        for (const f of entry.folders) {
+          this.consumedFolderPaths.add(f);
+        }
+      }
+    }
+
     for (const rootFolder of searchFolders) {
       const resolved = rootFolder.startsWith('~')
         ? rootFolder.replace('~', process.env.HOME || process.env.USERPROFILE || '')
@@ -97,6 +136,9 @@ export class WorkspaceTreeProvider extends BaseTreeProvider<AllTreeItem> {
       };
 
       for (const entry of this.cachedEntries) {
+        if (!this.matchesFilter(entry)) {
+          continue;
+        }
         if (entry.filePath.startsWith(resolved) || entry.directory.startsWith(resolved)) {
           const segments = entry.getRelativeSegments(resolved);
           this.insertIntoTree(rootNode, segments, entry);
@@ -106,15 +148,12 @@ export class WorkspaceTreeProvider extends BaseTreeProvider<AllTreeItem> {
       this.folderTree.set(resolved, rootNode);
     }
 
-    // Convert to tree items
     const items: AllTreeItem[] = [];
 
     if (this.folderTree.size === 1) {
-      // Single root — show its children directly
       const root = [...this.folderTree.values()][0];
-      items.push(...this.folderNodeToItems(root, condense));
+      items.push(...(await this.folderNodeToItems(root, condense)));
     } else {
-      // Multiple roots — show each root folder
       for (const [, rootNode] of this.folderTree) {
         if (rootNode.children.size > 0 || rootNode.workspaces.length > 0) {
           items.push(new FolderTreeItem(
@@ -149,16 +188,32 @@ export class WorkspaceTreeProvider extends BaseTreeProvider<AllTreeItem> {
     this.insertIntoTree(child, rest, entry);
   }
 
-  private folderNodeToItems(node: FolderNode, condense: boolean): AllTreeItem[] {
+  private async folderNodeToItems(node: FolderNode, condense: boolean): Promise<AllTreeItem[]> {
     const items: AllTreeItem[] = [];
 
-    // Add child folders
+    const onDiskDirs = new Set<string>();
+    const childFolderPaths = new Set<string>();
+
+    // Add .code-workspace files at the very top
+    const codeWorkspaces = node.workspaces.filter(e => e.isWorkspaceFile);
+    const folderWorkspaces = node.workspaces.filter(e => !e.isWorkspaceFile && !this.consumedFolderPaths.has(e.filePath));
+
+    for (const entry of codeWorkspaces) {
+      items.push(this.createWorkspaceTreeItem(entry));
+    }
+
+    // Then folder workspaces
+    for (const entry of folderWorkspaces) {
+      items.push(this.createWorkspaceTreeItem(entry));
+    }
+
+    const folderItems: FolderTreeItem[] = [];
     for (const [, childNode] of node.children) {
-      // Condense: if a folder has exactly one child folder and no workspaces, merge them
+      childFolderPaths.add(childNode.fullPath);
       if (condense) {
         const condensedNode = this.condenseNode(childNode);
         if (condensedNode.children.size > 0 || condensedNode.workspaces.length > 0) {
-          items.push(new FolderTreeItem(
+          folderItems.push(new FolderTreeItem(
             condensedNode.name,
             condensedNode.fullPath,
             vscode.TreeItemCollapsibleState.Expanded,
@@ -166,7 +221,7 @@ export class WorkspaceTreeProvider extends BaseTreeProvider<AllTreeItem> {
         }
       } else {
         if (childNode.children.size > 0 || childNode.workspaces.length > 0) {
-          items.push(new FolderTreeItem(
+          folderItems.push(new FolderTreeItem(
             childNode.name,
             childNode.fullPath,
             vscode.TreeItemCollapsibleState.Expanded,
@@ -174,13 +229,41 @@ export class WorkspaceTreeProvider extends BaseTreeProvider<AllTreeItem> {
         }
       }
     }
+    
+    items.push(...folderItems);
 
-    // Add workspaces at this level
-    for (const entry of node.workspaces) {
-      items.push(this.createWorkspaceTreeItem(entry));
-    }
+    // Scan for bare folders — subdirectories on disk that have no workspace entry
+    await this.scanBareFolders(node, childFolderPaths, onDiskDirs, items);
 
     return items;
+  }
+
+  private async scanBareFolders(
+    node: FolderNode,
+    childFolderPaths: Set<string>,
+    onDiskDirs: Set<string>,
+    items: AllTreeItem[],
+  ): Promise<void> {
+    try {
+      const dirEntries = await fs.readdir(node.fullPath, { withFileTypes: true });
+      for (const entry of dirEntries) {
+        if (!entry.isDirectory()) {
+          continue;
+        }
+        if (entry.name.startsWith('.')) {
+          continue;
+        }
+        const fullPath = path.join(node.fullPath, entry.name);
+        if (this.consumedFolderPaths.has(fullPath)) {
+          continue;
+        }
+        if (!childFolderPaths.has(fullPath) && !node.workspaces.some(w => w.filePath === fullPath || w.directory === fullPath)) {
+          items.push(new BareFolderTreeItem(entry.name, fullPath));
+        }
+      }
+    } catch {
+      // Ignore — directory might not exist or be inaccessible
+    }
   }
 
   private condenseNode(node: FolderNode): FolderNode {
@@ -197,13 +280,13 @@ export class WorkspaceTreeProvider extends BaseTreeProvider<AllTreeItem> {
     return node;
   }
 
-  private getFolderChildren(folderPath: string): AllTreeItem[] {
+  private async getFolderChildren(folderPath: string): Promise<AllTreeItem[]> {
     const condense = getCondenseFolders();
     const node = this.findNode(folderPath);
     if (!node) {
       return [];
     }
-    return this.folderNodeToItems(node, condense);
+    return await this.folderNodeToItems(node, condense);
   }
 
   private findNode(targetPath: string): FolderNode | undefined {
@@ -226,7 +309,6 @@ export class WorkspaceTreeProvider extends BaseTreeProvider<AllTreeItem> {
         return found;
       }
     }
-    // Also check condensed paths
     if (node.children.size === 1 && node.workspaces.length === 0) {
       const condensed = this.condenseNode(node);
       if (condensed.fullPath === targetPath) {

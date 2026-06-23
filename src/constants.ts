@@ -39,6 +39,11 @@ export const CMD = {
   removeSearchFolderItem: 'workspaceHub.removeSearchFolderItem',
   toggleIncludeGitFolders: 'workspaceHub.toggleIncludeGitFolders',
   toggleIncludeGitFoldersOff: 'workspaceHub.toggleIncludeGitFoldersOff',
+  filterWorkspaces: 'workspaceHub.filterWorkspaces',
+  clearFilter: 'workspaceHub.clearFilter',
+  createWorkspaceFile: 'workspaceHub.createWorkspaceFile',
+  addFolderToWorkspace: 'workspaceHub.addFolderToWorkspace',
+  removeFolderFromWorkspace: 'workspaceHub.removeFolderFromWorkspace',
 } as const;
 
 // Configuration keys
@@ -80,4 +85,5 @@ export const CTX = {
   viewMode: 'workspaceHub.viewMode',
   hasSearchFolders: 'workspaceHub.hasSearchFolders',
   includeGitFolders: 'workspaceHub.includeGitFolders',
+  filterActive: 'workspaceHub.filterActive',
 } as const;

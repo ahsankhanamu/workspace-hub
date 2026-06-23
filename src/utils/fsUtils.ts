@@ -1,5 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { parse, ParseError } from 'jsonc-parser';
 
 export async function fileExists(filePath: string): Promise<boolean> {
   try {
@@ -22,7 +23,17 @@ export async function getFileStat(filePath: string): Promise<{ mtimeMs: number }
 export async function readJsonFile<T>(filePath: string): Promise<T | undefined> {
   try {
     const content = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(content) as T;
+    const errors: ParseError[] = [];
+    const parsed = parse(content, errors, { allowTrailingComma: true });
+    
+    // Even if there are syntax errors (like an extra curly brace),
+    // jsonc-parser often manages to parse the valid parts.
+    // We'll return what it successfully extracted.
+    if (parsed) {
+      return parsed as T;
+    }
+    
+    return undefined;
   } catch {
     return undefined;
   }

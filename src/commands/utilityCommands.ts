@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { WorkspaceTreeItem, SearchFolderTreeItem } from '../models/TreeItems.js';
+import { WorkspaceTreeItem, SearchFolderTreeItem, BareFolderTreeItem } from '../models/TreeItems.js';
 import { CONFIG, CTX } from '../constants.js';
 import type { WorkspaceTreeProvider } from '../providers/WorkspaceTreeProvider.js';
 import type { WorkspaceStateService } from '../services/WorkspaceStateService.js';
@@ -10,8 +10,8 @@ export function createUtilityCommands(
   stateService: WorkspaceStateService,
 ) {
   return {
-    revealInOS: (item?: WorkspaceTreeItem | SearchFolderTreeItem) => {
-      if (item instanceof SearchFolderTreeItem) {
+    revealInOS: (item?: WorkspaceTreeItem | SearchFolderTreeItem | BareFolderTreeItem) => {
+      if (item instanceof SearchFolderTreeItem || item instanceof BareFolderTreeItem) {
         void vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(item.folderPath));
         return;
       }
@@ -135,6 +135,30 @@ export function createUtilityCommands(
         await vscode.commands.executeCommand('setContext', CTX.hasSearchFolders, newFolders.length > 0);
         vscode.window.showInformationMessage(`Added ${uris.length} search folder(s).`);
       }
+    },
+
+    filterWorkspaces: async () => {
+      const currentFilter = workspaceTreeProvider.filterText;
+      const text = await vscode.window.showInputBox({
+        prompt: 'Filter workspaces by name or path...',
+        placeHolder: 'Type to filter workspaces...',
+        value: currentFilter,
+        ignoreFocusOut: true,
+      });
+
+      if (text === undefined) {
+        return;
+      }
+
+      if (text === '') {
+        workspaceTreeProvider.clearFilter();
+      } else {
+        workspaceTreeProvider.setFilter(text);
+      }
+    },
+
+    clearFilter: () => {
+      workspaceTreeProvider.clearFilter();
     },
 
     removeSearchFolder: async () => {
