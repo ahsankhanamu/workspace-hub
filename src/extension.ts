@@ -34,7 +34,7 @@ import { WorkspaceDragAndDropController } from './providers/WorkspaceDragAndDrop
 
 export function activate(context: vscode.ExtensionContext): void {
   // ── Services ──────────────────────────────────────
-  const cacheService = new WorkspaceCacheService();
+  const cacheService = new WorkspaceCacheService(context.globalState);
   const discoveryService = new WorkspaceDiscoveryService(cacheService);
   const stateService = new WorkspaceStateService(context.globalState);
   const fileWatcherService = new FileWatcherService();

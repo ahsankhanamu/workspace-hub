@@ -26,6 +26,8 @@ export class WorkspaceDiscoveryService {
     if (!forceRefresh) {
       const cached = this.cache.get();
       if (cached) {
+        // Trigger a background refresh to catch any external changes without blocking UI
+        this.backgroundRefresh().catch(console.error);
         return cached;
       }
     }
@@ -33,6 +35,33 @@ export class WorkspaceDiscoveryService {
     const entries = await this.scan();
     this.cache.set(entries);
     return entries;
+  }
+
+  private async backgroundRefresh(): Promise<void> {
+    if (this.scanPromise) return; // already scanning
+    const oldEntries = this.cache.get() || [];
+    const newEntries = await this.scan();
+    
+    // Check if lengths are different
+    if (oldEntries.length !== newEntries.length) {
+      this.cache.set(newEntries);
+      this._onDidChangeWorkspaces.fire();
+      return;
+    }
+    
+    // Check if any paths or names changed
+    for (let i = 0; i < oldEntries.length; i++) {
+      if (oldEntries[i].filePath !== newEntries[i].filePath || 
+          oldEntries[i].name !== newEntries[i].name ||
+          oldEntries[i].folders?.length !== newEntries[i].folders?.length) {
+        this.cache.set(newEntries);
+        this._onDidChangeWorkspaces.fire();
+        return;
+      }
+    }
+    
+    // No changes, just update cache timestamp silently
+    this.cache.set(newEntries);
   }
 
   async refresh(): Promise<void> {
