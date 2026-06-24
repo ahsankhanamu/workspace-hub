@@ -727,7 +727,9 @@
     "test:watch": "vitest",
     "package": "vsce package",
     "install:vscode": "npm run package && code --install-extension workspace-hub-0.1.0.vsix --force",
-    "install:cursor": "npm run package && cursor --install-extension workspace-hub-0.1.0.vsix --force"
+    "install:cursor": "npm run package && cursor --install-extension workspace-hub-0.1.0.vsix --force",
+    "publish:vscode": "vsce publish",
+    "publish:openvsx": "npx ovsx publish"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
