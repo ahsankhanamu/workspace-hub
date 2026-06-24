@@ -719,15 +719,16 @@
     ]
   },
   "scripts": {
+    "vscode:prepublish": "npm run build",
     "compile": "tsc -noEmit && node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
     "build": "node esbuild.mjs --production",
     "lint": "eslint src/",
     "test": "vitest run",
     "test:watch": "vitest",
-    "package": "vsce package",
-    "install:vscode": "npm run package && code --install-extension workspace-hub-0.1.0.vsix --force",
-    "install:cursor": "npm run package && cursor --install-extension workspace-hub-0.1.0.vsix --force",
+    "package": "rm -f *.vsix && vsce package",
+    "install:vscode": "npm run package && code --install-extension *.vsix --force",
+    "install:cursor": "npm run package && cursor --install-extension *.vsix --force",
     "publish:vscode": "vsce publish",
     "publish:openvsx": "npx ovsx publish"
   },
