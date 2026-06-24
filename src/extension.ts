@@ -61,7 +61,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const utilCmds = createUtilityCommands(workspaceTreeProvider, stateService);
 
   // ── Register Views ────────────────────────────────
-  const dndController = new WorkspaceDragAndDropController();
+  const dndController = new WorkspaceDragAndDropController(crudService);
   
   context.subscriptions.push(
     vscode.window.createTreeView(VIEW_ID_ALL, { treeDataProvider: workspaceTreeProvider, dragAndDropController: dndController }),
