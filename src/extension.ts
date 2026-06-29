@@ -39,7 +39,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const stateService = new WorkspaceStateService(context.globalState);
   const fileWatcherService = new FileWatcherService();
   const sortService = new SortService(stateService);
-  const crudService = new WorkspaceCrudService(discoveryService);
+  const crudService = new WorkspaceCrudService(discoveryService, stateService);
 
   // ── Providers ─────────────────────────────────────
   const workspaceTreeProvider = new WorkspaceTreeProvider(discoveryService, stateService, sortService);

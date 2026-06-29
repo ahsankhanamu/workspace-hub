@@ -58,6 +58,24 @@ export async function renameFile(oldPath: string, newPath: string): Promise<void
 }
 
 /**
+ * Rewrite folder entries so they resolve to the same absolute paths after
+ * the workspace file moves from oldWorkspaceDir to newWorkspaceDir.
+ */
+export function rewriteWorkspaceFolderPaths<T extends { path: string }>(
+  folders: T[],
+  oldWorkspaceDir: string,
+  newWorkspaceDir: string,
+): T[] {
+  return folders.map(folder => {
+    const absolutePath = path.isAbsolute(folder.path)
+      ? folder.path
+      : path.resolve(oldWorkspaceDir, folder.path);
+    const newRelPath = path.relative(newWorkspaceDir, absolutePath) || '.';
+    return { ...folder, path: newRelPath };
+  });
+}
+
+/**
  * Parse a .code-workspace file to extract folder paths.
  */
 export async function parseWorkspaceFile(filePath: string): Promise<string[]> {

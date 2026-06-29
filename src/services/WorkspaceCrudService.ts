@@ -1,11 +1,15 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { readJsonFile, writeJsonFile, deleteFile, copyFile, renameFile, fileExists } from '../utils/fsUtils.js';
+import { readJsonFile, writeJsonFile, deleteFile, copyFile, renameFile, fileExists, rewriteWorkspaceFolderPaths } from '../utils/fsUtils.js';
 import { getConfirmDelete } from '../utils/configUtils.js';
 import type { WorkspaceDiscoveryService } from './WorkspaceDiscoveryService.js';
+import type { WorkspaceStateService } from './WorkspaceStateService.js';
 
 export class WorkspaceCrudService {
-  constructor(private readonly discoveryService: WorkspaceDiscoveryService) {}
+  constructor(
+    private readonly discoveryService: WorkspaceDiscoveryService,
+    private readonly stateService?: WorkspaceStateService,
+  ) {}
 
   async createWorkspace(name: string, location: string, folders: string[] = []): Promise<string> {
     const filePath = path.join(location, `${name}.code-workspace`);
@@ -41,6 +45,37 @@ export class WorkspaceCrudService {
     await deleteFile(filePath);
     await this.discoveryService.refresh();
     return true;
+  }
+
+  async moveWorkspace(workspacePath: string, destinationDir: string): Promise<string> {
+    const oldDir = path.dirname(workspacePath);
+    const normalizedDestination = path.resolve(destinationDir);
+
+    if (oldDir === normalizedDestination) {
+      return workspacePath;
+    }
+
+    const fileName = path.basename(workspacePath);
+    const newPath = path.join(normalizedDestination, fileName);
+
+    if (await fileExists(newPath)) {
+      throw new Error(`A workspace file already exists at: ${newPath}`);
+    }
+
+    const data = await readJsonFile<{ folders?: Array<{ path: string }>, [key: string]: unknown }>(workspacePath);
+    if (!data) {
+      throw new Error(`Could not read workspace file: ${workspacePath}`);
+    }
+
+    if (data.folders) {
+      data.folders = rewriteWorkspaceFolderPaths(data.folders, oldDir, normalizedDestination);
+    }
+
+    await writeJsonFile(newPath, data);
+    await deleteFile(workspacePath);
+    await this.stateService?.remapWorkspacePath(workspacePath, newPath);
+    await this.discoveryService.refresh();
+    return newPath;
   }
 
   async renameWorkspace(filePath: string, newName: string): Promise<string> {

@@ -185,6 +185,65 @@ export class WorkspaceStateService {
     await this.globalState.update(STATE.openCounts, counts);
   }
 
+  async remapWorkspacePath(oldPath: string, newPath: string): Promise<void> {
+    if (oldPath === newPath) {
+      return;
+    }
+
+    let changed = false;
+
+    const favorites = this.getFavorites();
+    const favoriteIndex = favorites.indexOf(oldPath);
+    if (favoriteIndex >= 0) {
+      favorites[favoriteIndex] = newPath;
+      await this.globalState.update(STATE.favorites, favorites);
+      changed = true;
+    }
+
+    const pinned = this.getPinned();
+    const pinnedIndex = pinned.indexOf(oldPath);
+    if (pinnedIndex >= 0) {
+      pinned[pinnedIndex] = newPath;
+      await this.globalState.update(STATE.pinned, pinned);
+      changed = true;
+    }
+
+    const groups = this.getGroups();
+    let groupsChanged = false;
+    for (const group of groups) {
+      const pathIndex = group.workspacePaths.indexOf(oldPath);
+      if (pathIndex >= 0) {
+        group.workspacePaths[pathIndex] = newPath;
+        groupsChanged = true;
+      }
+    }
+    if (groupsChanged) {
+      await this.saveGroups(groups);
+      changed = true;
+    }
+
+    const recents = this.getRecents();
+    const recentIndex = recents.findIndex(r => r.filePath === oldPath);
+    if (recentIndex >= 0) {
+      recents[recentIndex] = { ...recents[recentIndex], filePath: newPath };
+      await this.globalState.update(STATE.recents, recents);
+      changed = true;
+    }
+
+    const counts = this.getOpenCounts();
+    if (oldPath in counts) {
+      counts[newPath] = (counts[newPath] ?? 0) + counts[oldPath];
+      delete counts[oldPath];
+      await this.globalState.update(STATE.openCounts, counts);
+      changed = true;
+    }
+
+    if (changed) {
+      await this.initContext();
+      this._onDidChangeState.fire();
+    }
+  }
+
   // ── Init context ───────────────────────────────────────
 
   async initContext(): Promise<void> {

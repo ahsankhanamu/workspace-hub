@@ -1,4 +1,37 @@
 import * as path from 'path';
+import type { WorkspaceEntry } from '../models/WorkspaceEntry.js';
+
+/**
+ * Paths that should not appear as duplicate bare folders or git-folder workspaces
+ * because a .code-workspace file already represents them.
+ */
+export function buildConsumedFolderPaths(entries: WorkspaceEntry[]): Set<string> {
+  const consumed = new Set<string>();
+
+  for (const entry of entries) {
+    if (!entry.isWorkspaceFile || !entry.folders?.length) {
+      continue;
+    }
+
+    for (const folderPath of entry.folders) {
+      consumed.add(path.normalize(folderPath));
+    }
+
+    const workspaceParentDir = path.dirname(entry.filePath);
+    const impliedContainerDir = path.normalize(path.join(workspaceParentDir, entry.name));
+    const allUnderContainer = entry.folders.every(folderPath => {
+      const normalized = path.normalize(folderPath);
+      return normalized === impliedContainerDir
+        || normalized.startsWith(impliedContainerDir + path.sep);
+    });
+
+    if (allUnderContainer) {
+      consumed.add(impliedContainerDir);
+    }
+  }
+
+  return consumed;
+}
 
 /**
  * Normalize a file path for consistent comparison.

@@ -49,11 +49,11 @@ export class WorkspaceDiscoveryService {
       return;
     }
     
-    // Check if any paths or names changed
+    // Check if any paths, names, or folder lists changed
     for (let i = 0; i < oldEntries.length; i++) {
-      if (oldEntries[i].filePath !== newEntries[i].filePath || 
+      if (oldEntries[i].filePath !== newEntries[i].filePath ||
           oldEntries[i].name !== newEntries[i].name ||
-          oldEntries[i].folders?.length !== newEntries[i].folders?.length) {
+          !this.haveSameFolders(oldEntries[i].folders, newEntries[i].folders)) {
         this.cache.set(newEntries);
         this._onDidChangeWorkspaces.fire();
         return;
@@ -62,6 +62,15 @@ export class WorkspaceDiscoveryService {
     
     // No changes, just update cache timestamp silently
     this.cache.set(newEntries);
+  }
+
+  private haveSameFolders(oldFolders: string[] | undefined, newFolders: string[] | undefined): boolean {
+    const left = oldFolders ?? [];
+    const right = newFolders ?? [];
+    if (left.length !== right.length) {
+      return false;
+    }
+    return left.every((folder, index) => folder === right[index]);
   }
 
   async refresh(): Promise<void> {

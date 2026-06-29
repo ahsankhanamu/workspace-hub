@@ -8,6 +8,7 @@ import type { SortService } from '../services/SortService.js';
 import type { WorkspaceEntry } from '../models/WorkspaceEntry.js';
 import { WorkspaceTreeItem, FolderTreeItem, BareFolderTreeItem, WorkspaceFolderTreeItem } from '../models/TreeItems.js';
 import { getViewMode, getSortField, getSortDirection, getCondenseFolders, getSearchFolders } from '../utils/configUtils.js';
+import { buildConsumedFolderPaths } from '../utils/pathUtils.js';
 import type { ViewMode } from '../types.js';
 
 type AllTreeItem = WorkspaceTreeItem | FolderTreeItem | BareFolderTreeItem | WorkspaceFolderTreeItem;
@@ -122,15 +123,7 @@ export class WorkspaceTreeProvider extends BaseTreeProvider<AllTreeItem> {
     const condense = getCondenseFolders();
 
     this.folderTree.clear();
-    this.consumedFolderPaths.clear();
-
-    for (const entry of this.cachedEntries) {
-      if (entry.isWorkspaceFile && entry.folders) {
-        for (const f of entry.folders) {
-          this.consumedFolderPaths.add(f);
-        }
-      }
-    }
+    this.consumedFolderPaths = buildConsumedFolderPaths(this.cachedEntries);
 
     for (const rootFolder of searchFolders) {
       const resolved = rootFolder.startsWith('~')
@@ -221,6 +214,11 @@ export class WorkspaceTreeProvider extends BaseTreeProvider<AllTreeItem> {
     const folderItems: FolderTreeItem[] = [];
     for (const [, childNode] of node.children) {
       childFolderPaths.add(childNode.fullPath);
+
+      if (this.consumedFolderPaths.has(childNode.fullPath)) {
+        continue;
+      }
+
       if (condense) {
         const condensedNode = this.condenseNode(childNode);
         if (condensedNode.children.size > 0 || condensedNode.workspaces.length > 0) {

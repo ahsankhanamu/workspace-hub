@@ -3,8 +3,8 @@ import { WorkspaceTreeItem, BareFolderTreeItem, FolderTreeItem, SearchFolderTree
 import type { WorkspaceCrudService } from '../services/WorkspaceCrudService.js';
 
 export class WorkspaceDragAndDropController implements vscode.TreeDragAndDropController<vscode.TreeItem> {
-  dropMimeTypes: string[] = ['text/uri-list', 'application/vnd.workspacehub.folder', 'files'];
-  dragMimeTypes: string[] = ['text/uri-list', 'application/vnd.workspacehub.folder'];
+  dropMimeTypes: string[] = ['text/uri-list', 'application/vnd.workspacehub.folder', 'application/vnd.workspacehub.workspace', 'files'];
+  dragMimeTypes: string[] = ['text/uri-list', 'application/vnd.workspacehub.folder', 'application/vnd.workspacehub.workspace'];
 
   constructor(private readonly crudService: WorkspaceCrudService) {}
 
@@ -15,6 +15,7 @@ export class WorkspaceDragAndDropController implements vscode.TreeDragAndDropCon
   ): Promise<void> {
     const uris: string[] = [];
     const customPayloads: Array<{ workspaceFilePath: string, folderPath: string }> = [];
+    const workspaceFilePaths: string[] = [];
 
     for (const item of source) {
       if (item.resourceUri) {
@@ -23,6 +24,10 @@ export class WorkspaceDragAndDropController implements vscode.TreeDragAndDropCon
         uris.push(vscode.Uri.file(item.workspace.filePath).toString());
       } else if (item instanceof BareFolderTreeItem || item instanceof FolderTreeItem || item instanceof SearchFolderTreeItem) {
         uris.push(vscode.Uri.file(item.folderPath).toString());
+      }
+
+      if (item instanceof WorkspaceTreeItem && item.workspace.isWorkspaceFile) {
+        workspaceFilePaths.push(item.workspace.filePath);
       }
 
       // Check if dragging a folder FROM a workspace
@@ -40,6 +45,10 @@ export class WorkspaceDragAndDropController implements vscode.TreeDragAndDropCon
 
     if (customPayloads.length > 0) {
       dataTransfer.set('application/vnd.workspacehub.folder', new vscode.DataTransferItem(JSON.stringify(customPayloads)));
+    }
+
+    if (workspaceFilePaths.length > 0) {
+      dataTransfer.set('application/vnd.workspacehub.workspace', new vscode.DataTransferItem(JSON.stringify(workspaceFilePaths)));
     }
   }
   
@@ -70,6 +79,31 @@ export class WorkspaceDragAndDropController implements vscode.TreeDragAndDropCon
         console.error('Failed to parse drag and drop payload', err);
       }
       // DO NOT return here, we need to let the next block add it to the new workspace!
+    }
+
+    const moveDestinationDir = this.getMoveDestinationDir(target);
+    if (moveDestinationDir) {
+      const workspacePaths = await this.collectWorkspaceFilePaths(dataTransfer);
+      if (workspacePaths.length > 0) {
+        let movedCount = 0;
+        for (const workspacePath of workspacePaths) {
+          try {
+            await this.crudService.moveWorkspace(workspacePath, moveDestinationDir);
+            movedCount++;
+          } catch (err) {
+            vscode.window.showErrorMessage(`Failed to move workspace: ${(err as Error).message}`);
+          }
+        }
+
+        if (movedCount > 0) {
+          vscode.window.showInformationMessage(
+            movedCount === 1
+              ? 'Moved workspace file and updated folder paths.'
+              : `Moved ${movedCount} workspace files and updated folder paths.`,
+          );
+        }
+        return;
+      }
     }
 
     // Next, handle dropping regular folders (OS or otherwise) INTO a workspace
@@ -105,6 +139,9 @@ export class WorkspaceDragAndDropController implements vscode.TreeDragAndDropCon
             const uri = vscode.Uri.parse(uriStr.trim());
             // Only add if it is a local file system path
             if (uri.scheme === 'file') {
+              if (uri.fsPath.endsWith('.code-workspace')) {
+                continue;
+              }
               // Avoid adding the same file twice if it was already processed above
               await this.crudService.addFolderToWorkspace(dropWorkspacePath, uri.fsPath);
               addedCount++;
@@ -123,5 +160,59 @@ export class WorkspaceDragAndDropController implements vscode.TreeDragAndDropCon
         vscode.window.showWarningMessage(`No valid local folders were found in the drop payload.`);
       }
     }
+  }
+
+  private getMoveDestinationDir(target: vscode.TreeItem | undefined): string | undefined {
+    if (target instanceof FolderTreeItem) {
+      return target.folderPath;
+    }
+    if (target instanceof BareFolderTreeItem) {
+      return target.folderPath;
+    }
+    if (target instanceof WorkspaceFolderTreeItem) {
+      return target.folderPath;
+    }
+    if (target instanceof WorkspaceTreeItem && !target.workspace.isWorkspaceFile) {
+      return target.workspace.filePath;
+    }
+    return undefined;
+  }
+
+  private async collectWorkspaceFilePaths(dataTransfer: vscode.DataTransfer): Promise<string[]> {
+    const paths = new Set<string>();
+
+    const customData = dataTransfer.get('application/vnd.workspacehub.workspace');
+    if (customData) {
+      try {
+        const dataStr = await customData.asString();
+        if (dataStr) {
+          for (const workspacePath of JSON.parse(dataStr) as string[]) {
+            paths.add(workspacePath);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to parse workspace drag payload', err);
+      }
+    }
+
+    const uriList = dataTransfer.get('text/uri-list');
+    if (uriList) {
+      const rawUris = await uriList.asString();
+      for (const uriStr of rawUris.split(/\r?\n/)) {
+        if (!uriStr.trim() || uriStr.startsWith('#')) {
+          continue;
+        }
+        try {
+          const uri = vscode.Uri.parse(uriStr.trim());
+          if (uri.scheme === 'file' && uri.fsPath.endsWith('.code-workspace')) {
+            paths.add(uri.fsPath);
+          }
+        } catch {
+          // Ignore invalid URIs
+        }
+      }
+    }
+
+    return [...paths];
   }
 }
